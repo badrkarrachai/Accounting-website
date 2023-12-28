@@ -1,9 +1,14 @@
 import { Carousel } from "@material-tailwind/react";
-
+import AOS from "aos";
+import "aos/dist/aos.css";
+import { useEffect } from "react";
 export default function CarouselSimple() {
+  useEffect(() => {
+    AOS.init({ delay: 300, duration: 1500 });
+  }, []);
   const DummyCaption = ({ caption }) => (
     <>
-      <div className="flex h-full w-full inset-0 absolute">
+      <div className="flex h-full w-full inset-0 absolute" data-aos="fade-up">
         <div className="bg-[#00000075] brightness-50 w-full h-full inset-0"></div>
         <div className="flex justify-center items-center w-full h-full absolute">
           <div className="flex flex-col items-center text-center gap-3 sm:gap-10 px-4  justify-between text-2xl sm:text-5xl md:text-6xl font-Poppins xl:text-7xl">

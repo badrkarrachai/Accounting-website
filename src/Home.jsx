@@ -1,14 +1,43 @@
 import { MaterialTailwindTheme } from "@material-tailwind/react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import SmartSlider from "react-smart-slider";
 import { PiPhoneCallLight } from "react-icons/pi";
 import CarouselSimple from "./Components/CarouselSimple";
 import Footer from "./Components/Footer";
+import AOS from "aos";
+import "aos/dist/aos.css"; // You can also use <link> for styles
+// ..
+
+export const useOnScreen = (options) => {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      setIsIntersecting(entry.isIntersecting);
+    }, options);
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
+  }, [options]);
+
+  return [ref, isIntersecting];
+};
 
 function ChoseCard({ titre, textContenu, imgContenu }) {
   return (
     <>
-      <div className="w-full lg:w-[79%] rounded-xl bg-white shadow-2xl animate-DownToUp">
+      <div
+        data-aos="fade-up"
+        className="w-full lg:w-[79%] rounded-xl bg-white shadow-2xl animate-DownToUp"
+      >
         <div className="p-10">
           <div className="flex gap-8 items-center flex-col lg:flex-row">
             <div className="flex flex-col gap-8 w-full lg:w-1/2">
@@ -31,30 +60,52 @@ function ChoseCard({ titre, textContenu, imgContenu }) {
 }
 
 export default function Home() {
+  useEffect(() => {
+    AOS.init({ delay: 300, duration: 1500 });
+  }, []);
   const AnimatedNumber = ({ targetValue, animationDuration, steps }) => {
     const [value, setValue] = useState(0);
     const step = targetValue / steps;
+    const [hasAnimated, setHasAnimated] = useState(false); // State to track if animation has occurred
+    const [ref, isIntersecting] = useOnScreen({ threshold: 0.5 }); // Use the hook
 
     useEffect(() => {
       let count = 0;
 
-      const interval = setInterval(() => {
-        setValue((prevValue) => {
-          count++;
-          const newValue = count * step;
-          if (newValue >= targetValue) {
-            clearInterval(interval);
-            return targetValue;
-          }
-          return newValue;
-        });
-      }, animationDuration / steps);
+      const animate = () => {
+        const interval = setInterval(() => {
+          setValue((prevValue) => {
+            count++;
+            const newValue = count * step;
+            if (newValue >= targetValue) {
+              clearInterval(interval);
+              setHasAnimated(true); // Set animation flag to true once completed
+              return targetValue;
+            }
+            return newValue;
+          });
+        }, animationDuration / steps);
+      };
 
-      return () => clearInterval(interval);
-    }, [targetValue, animationDuration, steps, step]);
+      if (isIntersecting && !hasAnimated) {
+        animate();
+      }
+
+      return () => {}; // No cleanup needed
+    }, [
+      targetValue,
+      animationDuration,
+      steps,
+      step,
+      isIntersecting,
+      hasAnimated,
+    ]);
 
     return (
-      <div className="text-5xl md:text-6xl xl:text-7xl font-extrabold text-[#1E8FFE]">
+      <div
+        ref={ref}
+        className="text-5xl md:text-6xl xl:text-7xl font-extrabold text-[#1E8FFE]"
+      >
         {Math.round(value)}
         <sup className="text-4xl font-bold left-[0.5rem] md:top-[-2.75rem] text-white">
           +
@@ -178,7 +229,10 @@ export default function Home() {
         <div className="bg-white h-[950px] lg:h-screen  p-7 flex gap-3 justify-between shadow-sm">
           <div className="flex  justify-center items-center">
             <div className="flex w-full items-center  lg:w-4/5 flex-col lg:flex-row gap-10 h-[75%]">
-              <div className="flex flex-col gap-4 w-full lg:w-1/2">
+              <div
+                className="flex flex-col gap-4 w-full lg:w-1/2"
+                data-aos="fade-up"
+              >
                 <div className="font-extrabold text-[#1E8FFE] text-xl">
                   FONDATEUR _
                 </div>
@@ -204,13 +258,14 @@ export default function Home() {
               </div>
               <img
                 className="  rounded-3xl w-[100%] md:w-[60%] sm:w-[70%] lg:w-1/2 h-auto object-cover "
+                data-aos="fade-down"
                 src="src/assets/business-finance.jpg"
               ></img>
             </div>
           </div>
         </div>
         <div className="h-auto flex flex-col gap-16 items-center justify-center">
-          <div className="flex flex-col gap-7">
+          <div className="flex flex-col gap-7" data-aos="fade-up">
             <div className="w-full flex  justify-center">
               <div className="font-Poppins font-bold  text-4xl md:text-5xl">
                 Nos services
@@ -223,7 +278,10 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className="flex gap-8 gap-y-16 justify-center flex-wrap mt-4 px-12">
+          <div
+            className="flex gap-8 gap-y-16 justify-center flex-wrap mt-4 px-12"
+            data-aos="fade-up"
+          >
             {ClickableCards(
               "Audit",
               "Avez vous besoin d'un commissariat aux comptes ou d'un audit contractuel ? Souhaitez vous évaluer, gérer et atténuer ....",
@@ -247,50 +305,58 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-col gap-16 h-auto pb-52 bg-[#FEFEFF] pt-20">
-          <div className="font-Poppins text-3xl sm:text-5xl text-center font-bold w-full flex  justify-center">
+          <div
+            className="font-Poppins text-3xl sm:text-5xl text-center font-bold w-full flex  justify-center"
+            data-aos="fade-up"
+          >
             Pourquoi nous choisir ?
           </div>
           <div className="flex flex-row gap-4 sm:gap-8  justify-center flex-wrap mt-4 ">
-            {renderSet(1, 0, "EXCELLENCE")}
-            {renderSet(2, 1, "CONFIDENTIALITÉ")}
-            {renderSet(3, 2, "PROFESSIONNALISME")}
-            {renderSet(4, 3, "DISPONIBILITÉ")}
-            {visibleSet === 1 && (
-              <ChoseCard
-                titre={"EXELLENCE"}
-                imgContenu={"src/assets/excellence.jpg"}
-                textContenu={
-                  "<b>Aarab Rachid</b> s'est érigé en véritable modèle d'excellence dans le monde des affaires. La fondation même de l'entreprise repose sur une quête incessante de supériorité technique, imprégnant chaque facette de ses opérations. Cet engagement va au-delà de simples critères de performance, revêtant une importance stratégique qui garantit la préservation essentielle de son indépendance."
-                }
-              />
-            )}
-            {visibleSet === 2 && (
-              <ChoseCard
-                titre={"CONFIDENTIALITÉ"}
-                imgContenu={"src/assets/CONFIDENTIALITÉ.jpg"}
-                textContenu={
-                  "<b>Aarab Rachid</b> s'oblige à respecter le secret professionnel et démontre une grande prudence et discrétion dans l'utilisation des informations transmises dans le cadre de ses missions. Les renseignements que nous détenons ne sont divulgués qu'aux individus légalement autorisés à en avoir connaissance."
-                }
-              />
-            )}
-            {visibleSet === 3 && (
-              <ChoseCard
-                titre={"PROFESSIONNALISME"}
-                imgContenu={"src/assets/PROFESSIONNALISME.jpg"}
-                textContenu={
-                  "Le professionnalisme est une valeur centrale chez Aarab Rachid, se manifestant par une approche méticuleuse dans toutes les facettes de ses opérations. L'équipe démontre un engagement et une compétence élevés, offrant un service fiable et efficace aux clients. Cette culture du professionnalisme, couplée à un accent sur le développement continu en interne, renforce la réputation d'<b>Aarab Rachid</b> en tant qu'acteur majeur et fiable dans le domaine des affaires."
-                }
-              />
-            )}
-            {visibleSet === 4 && (
-              <ChoseCard
-                titre={"DISPONIBILITÉ"}
-                imgContenu={"src/assets/DISPONIBILITÉ.jpg"}
-                textContenu={
-                  "<b>Aarab Rachid</b> se distingue par sa disponibilité constante, offrant une réactivité rapide, un support client attentif et une flexibilité dans la gestion des projets. Cette approche renforce les relations avec la clientèle, contribuant à la réussite continue de l'entreprise."
-                }
-              />
-            )}
+            <div
+              className="flex flex-row gap-4 sm:gap-8  justify-center flex-wrap mt-4 "
+              data-aos="fade-up"
+            >
+              {renderSet(1, 0, "EXCELLENCE")}
+              {renderSet(2, 1, "CONFIDENTIALITÉ")}
+              {renderSet(3, 2, "PROFESSIONNALISME")}
+              {renderSet(4, 3, "DISPONIBILITÉ")}
+              {visibleSet === 1 && (
+                <ChoseCard
+                  titre={"EXELLENCE"}
+                  imgContenu={"src/assets/excellence.jpg"}
+                  textContenu={
+                    "<b>Aarab Rachid</b> s'est érigé en véritable modèle d'excellence dans le monde des affaires. La fondation même de l'entreprise repose sur une quête incessante de supériorité technique, imprégnant chaque facette de ses opérations. Cet engagement va au-delà de simples critères de performance, revêtant une importance stratégique qui garantit la préservation essentielle de son indépendance."
+                  }
+                />
+              )}
+              {visibleSet === 2 && (
+                <ChoseCard
+                  titre={"CONFIDENTIALITÉ"}
+                  imgContenu={"src/assets/CONFIDENTIALITÉ.jpg"}
+                  textContenu={
+                    "<b>Aarab Rachid</b> s'oblige à respecter le secret professionnel et démontre une grande prudence et discrétion dans l'utilisation des informations transmises dans le cadre de ses missions. Les renseignements que nous détenons ne sont divulgués qu'aux individus légalement autorisés à en avoir connaissance."
+                  }
+                />
+              )}
+              {visibleSet === 3 && (
+                <ChoseCard
+                  titre={"PROFESSIONNALISME"}
+                  imgContenu={"src/assets/PROFESSIONNALISME.jpg"}
+                  textContenu={
+                    "Le professionnalisme est une valeur centrale chez Aarab Rachid, se manifestant par une approche méticuleuse dans toutes les facettes de ses opérations. L'équipe démontre un engagement et une compétence élevés, offrant un service fiable et efficace aux clients. Cette culture du professionnalisme, couplée à un accent sur le développement continu en interne, renforce la réputation d'<b>Aarab Rachid</b> en tant qu'acteur majeur et fiable dans le domaine des affaires."
+                  }
+                />
+              )}
+              {visibleSet === 4 && (
+                <ChoseCard
+                  titre={"DISPONIBILITÉ"}
+                  imgContenu={"src/assets/DISPONIBILITÉ.jpg"}
+                  textContenu={
+                    "<b>Aarab Rachid</b> se distingue par sa disponibilité constante, offrant une réactivité rapide, un support client attentif et une flexibilité dans la gestion des projets. Cette approche renforce les relations avec la clientèle, contribuant à la réussite continue de l'entreprise."
+                  }
+                />
+              )}
+            </div>
             <div className="w-full max-w-6xl flex justify-center">
               <div className="w-full absolute mt-14 flex justify-center items-center">
                 <div className="w-10/12 h-auto bg-[#14212B] text-white rounded-[3rem] grid grid-cols-2 lg:grid-cols-4  gap-2 md:gap-8 items-center p-10  md:p-16 ">
@@ -343,8 +409,14 @@ export default function Home() {
       <div className=" flex flex-col bg-[#EFF4F2]  h-[115vh] mt-36  ">
         <div className="bg-[url('https://www.sabconsulting.ma/wp-content/uploads/2023/06/Ayoub-Contact.webp')] bg-bottom bg-no-repeat w-full h-full flex items-center justify-center">
           <div className=" lg:w-[598px] lg:h-[566px] h-[466px] w-[80%]   absolute mr-0 2xl:mr-[-27rem]  rounded-[3rem]  border-white">
-            <div className="absolute flex w-full h-full justify-between  border border-white bg-white/75  shadow-lg shadow-black/5 saturate-200 backdrop-blur-sm rounded-3xl"></div>
-            <div className="absolute inset-0 flex flex-col justify-center items-start p-10 gap-12">
+            <div
+              data-aos="fade-up"
+              className="absolute flex w-full h-full justify-between  border border-white bg-white/75  shadow-lg shadow-black/5 saturate-200 backdrop-blur-sm rounded-3xl"
+            ></div>
+            <div
+              data-aos="fade-up"
+              className="absolute inset-0 flex flex-col justify-center items-start p-10 gap-12"
+            >
               <img
                 src="src/assets/logoAarab.png"
                 className="b bg-no-repeat w-[205px] h-[100px] left-0"
@@ -358,9 +430,12 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="absolute bottom-[-16.75rem] lg:bottom-[-12rem] right-0  lg:right-[-7rem] lg:w-80 lg:h-80 w-72 h-72 flex flex-col">
+            <div
+              data-aos="fade-left"
+              className="absolute bottom-[-16.75rem] lg:bottom-[-12rem] right-0  lg:right-[-7rem] lg:w-80 lg:h-80 w-72 h-72 flex flex-col"
+            >
               <img src="src/assets/phone.png" alt="" />
-              <div className="w-16 h-16 rounded-full bg-[#1E8FFE] shadow absolute flex left-[6rem] items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-[#515253] shadow absolute flex left-[6rem] items-center justify-center">
                 <PiPhoneCallLight color="white" size={"2.4rem"} />
               </div>
               <div className="absolute top-20  left-12 w-auto h-auto text-white font-bold text-xl">
